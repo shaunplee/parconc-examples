@@ -1,0 +1,21 @@
+resolver: lts-14.27 #ghc-8.6.5
+flags:
+  parconc-examples:
+    distributed: true
+    accelerate: true
+extra-package-dbs: []
+packages:
+- '.'
+extra-deps:
+  - accelerate-1.2.0.1
+
+  # See: https://github.com/haskell-distributed/distributed-process/pull/344
+  - github: patrickt/distributed-process
+    commit: 792ff033db2e2c0692cc639ea2c912072f6d929c
+
+  - distributed-process-simplelocalnet-0.2.4
+  - distributed-static-0.3.9
+  - network-transport-tcp-0.6.1
+  - normaldistribution-1.1.0.3
+
+allow-newer: true

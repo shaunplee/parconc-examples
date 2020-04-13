@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell, DeriveDataTypeable, DeriveGeneric #-}
+{-# LANGUAGE TemplateHaskell, DeriveDataTypeable, DeriveGeneric, CPP #-}
 {-# OPTIONS_GHC -Wall #-}
 import Control.Distributed.Process hiding (Message)
 import Control.Distributed.Process.Closure
@@ -42,7 +42,11 @@ master = do
   say $ printf "sending ping to %s" (show pid)
 
 -- <<withMonitor
+#if MIN_VERSION_distributed_process(0,7,0)
+  withMonitor_ pid $ do
+#else
   withMonitor pid $ do
+#endif
     send pid (Pong mypid)               -- <1>
     receiveWait
       [ match $ \(Pong _) -> do

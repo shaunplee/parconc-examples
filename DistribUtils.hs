@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell, CPP #-}
 module DistribUtils ( distribMain ) where
 
 import Control.Distributed.Process
@@ -8,7 +8,12 @@ import Control.Distributed.Process.Backend.SimpleLocalnet
 import Control.Distributed.Static hiding (initRemoteTable)
 
 import System.Environment
+
+#if MIN_VERSION_network(2,7,0)
+import Network.Socket hiding (shutdown, defaultPort)
+#else
 import Network.Socket hiding (shutdown)
+#endif
 
 import Language.Haskell.TH
 
