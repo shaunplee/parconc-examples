@@ -1,0 +1,37 @@
+name: stack
+
+on:
+  push:
+    branches:
+      # - master
+      - '*'
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  build:
+    name: ${{ matrix.os }} (${{ matrix.resolver }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-18.04, macos-10.15, windows-2019]
+        # resolver lts-15.3 to avoid GHC 8.8.3 access violation, https://gitlab.haskell.org/ghc/ghc/issues/17926:
+        resolver: ["lts-15.3"]
+        cache-version: ["2020-04-13"]
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: mstksg/setup-stack@v2
+
+    - name: Cache ~/.stack
+      uses: actions/cache@v1
+      with:
+        path: ~/.stack
+        key: ${{ runner.os }}-${{ matrix.resolver }}-${{ matrix.cache-version }}-stack
+
+    - name: Install dependencies
+      run: stack build --only-dependencies
+
+    - name: Build
+      run: stack build --fast
