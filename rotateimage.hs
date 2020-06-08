@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, BangPatterns #-}
+{-# LANGUAGE FlexibleContexts, BangPatterns, LambdaCase #-}
 
 import Data.Array.Repa
 import Data.Array.Repa.IO.DevIL
@@ -11,9 +11,11 @@ main :: IO ()
 main = do
     [n, f1,f2] <- getArgs
     runIL $ do
-      (RGB v) <- readImage f1                                            -- <1>
-      rotated <- computeP $ rotate (read n) v :: IL (Array F DIM3 Word8) -- <2>
-      writeImage f2 (RGB rotated)                                        -- <3>
+      readImage f1 >>= \case -- <1>
+        RGB v -> do
+          rotated <- computeP $ rotate (read n) v :: IL (Array F DIM3 Word8) -- <2>
+          writeImage f2 (RGB rotated)                                        -- <3>
+        _ -> error "ERROR"
 -- >>
 
 -- <<rotate

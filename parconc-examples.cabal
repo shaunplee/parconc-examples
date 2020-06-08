@@ -1,15 +1,16 @@
+cabal-version:       2.4
 name:                parconc-examples
 version:             0.4.7
 synopsis:            Examples to accompany the book "Parallel and Concurrent Programming in Haskell"
 description:         Examples to accompany the book "Parallel and Concurrent Programming in Haskell"
-license:             BSD3
+license:             BSD-3-Clause
 license-file:        LICENSE
 author:              Simon Marlow
 maintainer:          Simon Marlow <marlowsd@gmail.com>
 copyright:           (c) Simon Marlow 2011-2013
 category:            Sample Code
 build-type:          Simple
-cabal-version:       >=1.10
+tested-with:         GHC ==7.10.3 || ==8.2.2 || ==8.4.4 || ==8.6.5 || ==8.8.3
 bug-reports:         https://github.com/simonmar/parconc-examples/issues
 homepage:            http://github.com/simonmar/parconc-examples
 
@@ -66,134 +67,107 @@ flag cuda
 -- -f-accelerate: Do not build the examples that require accelerate.
 
 flag accelerate
-  default : True
+  default: True
 
 -- -f-distributed: Do not build the examples that require distributed-process.
 
 flag distributed
-  default : True
+  default: True
 
--- -f network26: Use network-2.6.  Internal flag; you shouldn't need
+-- -f network26: Use network-2.6. Internal flag; you shouldn't need
 -- to change this.
 
 flag network26
-  default : True
+  default: True
 
+-- -----------------------------------------------------------------------------
+-- common stanza
+
+common common
+  build-depends: base >= 4.5 && < 4.14
+  default-language: Haskell2010
+
+common parallel
+  build-depends: parallel ==3.2.*
+  ghc-options: -O2 -threaded -rtsopts -eventlog
+
+common repa
+  build-depends: repa >= 3.2 && < 3.5
 -- -----------------------------------------------------------------------------
 -- par-eval
 
+common sudoku
+  other-modules: Sudoku
+  build-depends: array >= 0.4 && < 0.6
+
 executable rpar
+  import: common, parallel
   main-is: rpar.hs
-  build-depends:   base >= 4.5 && < 4.14
-                 , time >= 1.4 && < 1.10
-                 , parallel ==3.2.*
-  ghc-options: -threaded
-  default-language: Haskell2010
+  build-depends: time >= 1.4 && < 1.10
 
 executable sudoku1
+  import: common, sudoku
   main-is: sudoku1.hs
-  other-modules: Sudoku
-  build-depends:   base >= 4.5 && < 4.14
-                 , parallel ==3.2.*
-                 , array >= 0.4 && <0.6
-  default-language: Haskell2010
 
 executable sudoku2
+  import: common, sudoku, parallel
   main-is: sudoku2.hs
-  other-modules: Sudoku
-  build-depends:   base >= 4.5 && < 4.14
-                 , parallel ==3.2.*
-                 , array >= 0.4 && <0.6
-                 , deepseq >= 1.3 && < 1.5
-  ghc-options: -threaded
-  default-language: Haskell2010
+  build-depends: deepseq >= 1.3 && < 1.5
 
 executable sudoku3
+  import: common, sudoku, parallel
   main-is: sudoku3.hs
-  other-modules: Sudoku
-  build-depends:   base >= 4.5 && < 4.14
-                 , parallel ==3.2.*
-                 , array >= 0.4 && <0.6
-  ghc-options: -threaded
-  default-language: Haskell2010
 
 executable sudoku4
+  import: common, sudoku, parallel
   main-is: sudoku4.hs
-  other-modules: Sudoku
-  build-depends:   base >= 4.5 && < 4.14
-                 , parallel ==3.2.*
-                 , array >= 0.4 && <0.6
-  ghc-options: -threaded
-  default-language: Haskell2010
 
 executable sudoku5
+  import: common, sudoku, parallel
   main-is: sudoku5.hs
-  other-modules: Sudoku
-  build-depends:   base >= 4.5 && < 4.14
-                 , parallel ==3.2.*
-                 , array >= 0.4 && <0.6
-  ghc-options: -threaded
-  default-language: Haskell2010
 
 -- -----------------------------------------------------------------------------
 -- par-strat
 
 executable strat
+  import: common, parallel
   main-is: strat.hs
-  build-depends:   base >= 4.5 && < 4.14
-                 , parallel ==3.2.*
-  ghc-options: -threaded
-  default-language: Haskell2010
 
 executable strat2
+  import: common, parallel
   main-is: strat2.hs
-  build-depends:   base >= 4.5 && < 4.14
-                 , parallel ==3.2.*
-  ghc-options: -threaded
-  default-language: Haskell2010
 
 executable strat3
+  import: common, parallel
   main-is: strat3.hs
-  build-depends:   base >= 4.5 && < 4.14
-                 , parallel ==3.2.*
-  ghc-options: -threaded
-  default-language: Haskell2010
 
 executable rsa
+  import: common
   main-is: rsa.hs
   other-modules: ByteStringCompat
-  build-depends:   base >= 4.5 && < 4.14
-                 , bytestring >= 0.9 && < 0.11
+  build-depends:   bytestring >= 0.9 && < 0.11
                  , deepseq >= 1.3 && < 1.5
-  default-language: Haskell2010
 
 executable rsa1
+  import: common, parallel
   main-is: rsa1.hs
   other-modules: ByteStringCompat
-  build-depends:   base >= 4.5 && < 4.14
-                 , bytestring >= 0.9 && < 0.11
-                 , parallel ==3.2.*
+  build-depends:   bytestring >= 0.9 && < 0.11
                  , deepseq >= 1.3 && < 1.5
-  ghc-options: -threaded
-  default-language: Haskell2010
 
 executable rsa2
+  import: common, parallel
   main-is: rsa2.hs
   other-modules: ByteStringCompat
-  build-depends:   base >= 4.5 && < 4.14
-                 , bytestring >= 0.9 && < 0.11
-                 , parallel ==3.2.*
+  build-depends:   bytestring >= 0.9 && < 0.11
                  , deepseq >= 1.3 && < 1.5
-  ghc-options: -threaded
-  default-language: Haskell2010
 
 executable kmeans
+  import: common, parallel
   hs-source-dirs: kmeans
   main-is: kmeans.hs
   other-modules: KMeansCore
-  build-depends:   base >= 4.5 && < 4.14
-                 , parallel ==3.2.*
-                 , time >= 1.4 && < 1.10
+  build-depends:   time >= 1.4 && < 1.10
                  , deepseq >= 1.3 && < 1.5
                  , monad-par >= 0.3.4 && < 0.4
                    -- monad-par 0.3 has a bug:
@@ -202,22 +176,20 @@ executable kmeans
                  , array >= 0.4 && <0.6
                  , bytestring >= 0.9 && < 0.11
                  , vector >= 0.10 && < 0.13
-  ghc-options: -threaded
-  default-language: Haskell2010
 
 executable GenSamples
+  import: common
   hs-source-dirs: kmeans
   main-is: GenSamples.hs
   other-modules: KMeansCore
-  build-depends:   base >= 4.5 && < 4.14
-                 , binary >=0.6.3 && < 0.11
+  build-depends: binary >=0.6.3 && < 0.11
                  , array >= 0.4 && <0.6
                  , vector >= 0.10 && < 0.13
                  , random >= 1.0 && < 1.2
                  , normaldistribution >= 1.1 && < 1.2
                  , deepseq >= 1.3 && < 1.5
                  , bytestring >= 0.9 && < 0.11
-  default-language: Haskell2010
+  ghc-options: -O2
 
 -- -----------------------------------------------------------------------------
 -- par-monad
@@ -236,7 +208,7 @@ executable rsa-pipeline
                  , bytestring >= 0.9 && < 0.11
                  , monad-par >= 0.3.4 && < 0.4
                  , deepseq >= 1.3 && < 1.5
-  ghc-options: -threaded
+  ghc-options: -threaded -O2 -rtsopts -eventlog
   default-language: Haskell2010
 
 executable fwsparse
@@ -247,6 +219,7 @@ executable fwsparse
                  , random >= 1.0 && < 1.2
                  , array >= 0.4 && <0.6
                  , containers >= 0.4 && < 0.6
+  ghc-options: -O2
   default-language: Haskell2010
 
 executable fwsparse1
@@ -259,7 +232,7 @@ executable fwsparse1
                  , containers >= 0.4 && < 0.6
                  , monad-par >= 0.3.4 && < 0.4
                  , deepseq >= 1.3 && < 1.5
-  ghc-options: -threaded
+  ghc-options: -threaded -O2
   default-language: Haskell2010
 
 executable  timetable
@@ -286,6 +259,7 @@ executable  timetable2
                  , deepseq >= 1.3 && < 1.5
                  , monad-par >= 0.3.4 && < 0.4
                  , random >= 1.0 && < 1.2
+  ghc-options: -threaded -O2
   default-language: Haskell2010
 
 executable  timetable3
@@ -295,6 +269,7 @@ executable  timetable3
                  , deepseq >= 1.3 && < 1.5
                  , monad-par >= 0.3.4 && < 0.4
                  , random >= 1.0 && < 1.2
+  ghc-options: -threaded -O2
   default-language: Haskell2010
 
 executable  parinfer
@@ -318,36 +293,32 @@ executable  parinfer
                  , deepseq >= 1.3 && < 1.5
                  , monad-par >= 0.3.4 && < 0.4
                  , array >= 0.4 && <0.6
-  build-tools:     alex
-                 , happy
+  build-tool-depends: alex:alex
+                    , happy:happy
+  ghc-options: -threaded -O2
   default-language: Haskell2010
 
 -- -----------------------------------------------------------------------------
 -- par-repa
 
 executable  fwdense
+  import: common, repa
   main-is: fwdense.hs
-  build-depends:   base >= 4.5 && < 4.14
-                 , repa >= 3.2 && < 3.5
   ghc-options: -O2
   if flag(llvm)
      ghc-options: -fllvm
-  default-language: Haskell2010
 
 executable  fwdense1
+  import: common, repa
   main-is: fwdense1.hs
-  build-depends:   base >= 4.5 && < 4.14
-                 , repa >= 3.2 && < 3.5
-                 , transformers >=0.3 && <0.6
+  build-depends: transformers >=0.3 && <0.6
   ghc-options: -O2 -threaded
   if flag(llvm)
      ghc-options: -fllvm
-  default-language: Haskell2010
 
 executable rotateimage
+  import: common, repa
   main-is: rotateimage.hs
-  build-depends:   base >= 4.5 && < 4.14
-                 , repa >= 3.2 && < 3.5
   ghc-options: -O2 -threaded
   if flag(devil)
      build-depends: repa-devil == 0.3.*

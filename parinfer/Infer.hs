@@ -4,73 +4,85 @@
 -- since at least the late 90s.
 --
 
-module Infer (inferTerm,inferTop) where
+module Infer (inferTerm, inferTop) where
 
-import Data.List(nub)
-
-import  MyList                  (minus)
-import  Type                  (TVarId, MonoType (..), PolyType (All),
-                               arrow, intType, freeTVarMono)
-import  Term
-import  Substitution          (Sub, applySub, lookupSub, makeSub)
-import  Environment
-import  InferMonad
-import  Control.Monad.Par.Scheds.Trace
-import  qualified Data.Set as Set
-import  qualified Data.Map as Map
-import  Data.Map (Map)
-import  Data.Maybe
 import Control.Monad
+import Control.Monad.Par.Scheds.Trace
+import Data.List (nub)
+import qualified Data.Map as Map
+import Data.Map (Map)
+import Data.Maybe
+import qualified Data.Set as Set
+import Environment
+import InferMonad
+import MyList (minus)
+import Substitution (Sub, applySub, lookupSub, makeSub)
+import Term
+import Type
+  ( MonoType (..),
+    PolyType (All),
+    TVarId,
+    arrow,
+    freeTVarMono,
+    intType,
+  )
 
-specialiseI                   :: PolyType -> Infer MonoType
-specialiseI (All xxs tt)      =  freshesI (length xxs) `thenI` (\yys ->
-                                 returnI (applySubs xxs yys tt))
-applySubs                     :: [TVarId] -> [MonoType] -> MonoType -> MonoType
-applySubs xxs yys tt          =  applySub (makeSub (zip xxs yys)) tt
-generaliseI                   :: Env -> MonoType -> Infer PolyType
-generaliseI aa tt             =  getSubI `thenI` (\s ->
- 				 let aaVars = nub (freeTVarSubEnv s aa) in
-				 let ttVars = nub (freeTVarMono tt) in
-				 let xxs    = ttVars `minus` aaVars in
-                                 returnI (All xxs tt)
-                                 )
-freeTVarSubEnv                :: Sub -> Env -> [TVarId]
-freeTVarSubEnv s aa           =  concat (map (freeTVarMono . lookupSub s)
-                                             (freeTVarEnv aa))
+specialiseI :: PolyType -> Infer MonoType
+specialiseI (All xxs tt) =
+  freshesI (length xxs) `thenI`
+  (\yys -> returnI $ applySubs xxs yys tt)
 
-inferTerm  ::  Env -> Term -> Infer MonoType
-inferTerm _  (Int _)  = returnI intType
-inferTerm aa (Var x)  =
-      (x `elem` domEnv aa)                      `guardI` (
+applySubs :: [TVarId] -> [MonoType] -> MonoType -> MonoType
+applySubs xxs yys = applySub (makeSub $ zip xxs yys)
+
+generaliseI :: Env -> MonoType -> Infer PolyType
+generaliseI aa tt =
+  getSubI `thenI`
+  (\s -> let aaVars = nub (freeTVarSubEnv s aa) in
+         let ttVars = nub (freeTVarMono tt) in
+         let xxs    = ttVars `minus` aaVars in
+  returnI (All xxs tt)
+  )
+
+freeTVarSubEnv :: Sub -> Env -> [TVarId]
+freeTVarSubEnv s = concatMap (freeTVarMono . lookupSub s) . freeTVarEnv
+
+inferTerm :: Env -> Term -> Infer MonoType
+inferTerm _  (Int _) = returnI intType
+inferTerm aa (Var x) =
+  (x `elem` domEnv aa)
+    `guardI` (
       let ss = lookupEnv aa x in
-      specialiseI ss                          `thenI`  (\tt ->
-      substituteI tt                          `thenI`  (\uu  ->
-                                              returnI  uu)))
-inferTerm aa (Abs x v)  =
-      freshI                                  `thenI` (\xx ->
-      inferTerm (extendLocal aa x xx) v       `thenI` (\vv ->
-      substituteI xx                          `thenI` (\uu ->
-                                              returnI (uu `arrow` vv))))
+      specialiseI ss `thenI`
+      (\tt -> substituteI tt `thenI` returnI)
+    )
+inferTerm aa (Abs x v) =
+  freshI `thenI`
+  (\xx -> inferTerm (extendLocal aa x xx) v `thenI`
+  (\vv -> substituteI xx `thenI`
+  (\uu -> returnI (uu `arrow` vv))
+  ))
 inferTerm aa (App t u)  =
-      inferTerm aa t                          `thenI` (\tt ->
-      inferTerm aa u                          `thenI` (\uu ->
-      freshI                                  `thenI` (\xx ->
-      unifyI tt (uu `arrow` xx)               `thenI` (\() ->
-      substituteI xx                          `thenI` (\vv ->
-                                              returnI vv)))))
+  inferTerm aa t `thenI`
+  (\tt -> inferTerm aa u `thenI`
+  (\uu -> freshI `thenI`
+  (\xx -> unifyI tt (uu `arrow` xx) `thenI`
+  (\() -> substituteI xx `thenI`
+  returnI)
+  )))
 inferTerm aa (Let x u v)  = do
-    ss <- inferRhs aa u
-    inferTerm (extendGlobal aa x ss) v
+  ss <- inferRhs aa u
+  inferTerm (extendGlobal aa x ss) v
 
 inferRhs :: Env -> Term -> Infer PolyType
 inferRhs aa u = do
-    uu <- inferTerm aa u
-    generaliseI aa uu
+  uu <- inferTerm aa u
+  generaliseI aa uu
 
 inferTopRhs :: Env -> Term -> PolyType
 inferTopRhs aa u = useI (error "type error") $ do
-    uu <- inferTerm aa u
-    generaliseI aa uu
+  uu <- inferTerm aa u
+  generaliseI aa uu
 
 type TopEnv = Map VarId (IVar PolyType)
 

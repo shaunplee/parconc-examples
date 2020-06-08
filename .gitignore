@@ -8,13 +8,14 @@
 
 *.old
 
-dist
+dist-*
 
 cabal-dev
 cabal.sandbox.config
 .cabal-sandbox
 
 .stack-work
+stack*.yaml.lock
 
 bingtranslator
 bingtranslatorconc
@@ -81,3 +82,8 @@ sudoku5
 threadperf1
 threadperf2
 timeout
+points
+points.bin
+points.png
+clusters
+params
