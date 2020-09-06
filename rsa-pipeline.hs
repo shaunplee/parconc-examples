@@ -11,6 +11,8 @@ import Data.ByteString.Lazy.Char8 (ByteString)
 import ByteStringCompat
 import Control.Monad.Par.Scheds.Trace
 
+import Debug.Trace (trace)
+
 import Stream
 
 main = do
@@ -39,7 +41,7 @@ integer b | Just (i,_) <- B.readInteger b = i
 -- <<pipeline
 pipeline :: Integer -> Integer -> Integer -> ByteString -> ByteString
 pipeline n e d b = runPar $ do
-  s0 <- streamFromList (chunk (size n) b)
+  s0 <- streamFromList 200 100 (chunk (size n) b)
   s1 <- encrypt n e s0
   s2 <- decrypt n d s1
   xs <- streamFold (\x y -> (y : x)) [] s2
@@ -99,5 +101,3 @@ power n m x | even n = sqr (power (n `div` 2) m x) `mod` m
 
 sqr :: Integer -> Integer
 sqr x = x * x
-
-

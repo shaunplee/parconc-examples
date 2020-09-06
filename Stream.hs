@@ -1,6 +1,6 @@
 {-# LANGUAGE BangPatterns, CPP #-}
 {-# OPTIONS_GHC -fno-warn-name-shadowing -fwarn-unused-imports #-}
--- -Wall 
+-- -Wall
 
 -- A module for stream processing built on top of Control.Monad.Par
 
@@ -8,7 +8,7 @@
 --  the stream fusion framework.)
 
 module Stream
- ( 
+ (
    Stream, streamFromList, streamMap, streamFold, streamFilter
  ) where
 
@@ -22,6 +22,7 @@ import Control.DeepSeq
 data IList a
   = Nil
   | Cons a (IVar (IList a))
+  | Fork (Par ()) (IList a)
 
 type Stream a = IVar (IList a)
 -- >>
@@ -30,22 +31,39 @@ instance NFData a => NFData (IList a) where
 --  rnf Nil = r0
   rnf Nil = ()
   rnf (Cons a b) = rnf a `seq` rnf b
+  rnf (Fork _ b) = rnf b
 
 -- -----------------------------------------------------------------------------
 -- Stream operators
 
 -- <<streamFromList
-streamFromList :: NFData a => [a] -> Par (Stream a)
-streamFromList xs = do
+streamFromList :: (Show a, NFData a) => Int -> Int -> [a] -> Par (Stream a)
+streamFromList chunkSize forkDist xs = do
   var <- new                            -- <1>
-  fork $ loop xs var                    -- <2>
+  fork $ loop chunkSize forkDist xs var -- <2>
   return var                            -- <3>
  where
-  loop [] var = put var Nil             -- <4>
-  loop (x:xs) var = do                  -- <5>
+  loop :: (Show a, NFData a) => Int -> Int -> [a] -> IVar (IList a) -> Par ()
+  loop _ _ [] var = put var Nil         -- <4>
+  loop cRem 0 (x:xs) var = do  -- add a Fork
+    tail <- new
+    put var (Fork (buildMore (forkDist - 1) xs tail) (Cons x tail))
+    loop (cRem - 1) (chunkSize - 1) xs tail
+  loop 0 _ _ _ = return () -- quit this loop if chunk is done
+  loop cRem fDist (x:xs) var = do       -- <5>
     tail <- new                         -- <6>
     put var (Cons x tail)               -- <7>
-    loop xs tail                        -- <8>
+    loop (cRem - 1) (fDist - 1) xs tail -- <8>
+  buildMore :: (Show a, NFData a) => Int -> [a] -> IVar (IList a) -> Par ()
+  buildMore _ [] var = return ()
+  buildMore 0 ys var = loop chunkSize (chunkSize - forkDist) ys var
+  buildMore fdRem (_:ys) restP = do
+    next <- get restP
+    case next of
+      Nil -> return ()
+      (Cons _ newTail) -> buildMore (fdRem - 1) ys newTail
+      (Fork _ _) -> error "Two Forks in a row (streamFromList)"
+
 -- >>
 
 -- <<streamMap
@@ -63,6 +81,12 @@ streamMap fn instrm = do
         newtl <- new
         put outstrm (Cons (fn h) newtl)
         loop t newtl
+      Fork _ Nil -> put outstrm Nil
+      Fork f (Cons h t) -> do
+        newt1 <- new
+        put outstrm (Fork f (Cons (fn h) newt1))
+        loop t newt1
+      Fork _ (Fork _ _) -> error "Two Forks in a row (streamMap)"
 -- >>
 
 
@@ -75,6 +99,10 @@ streamFold fn !acc instrm = do
   case ilst of
     Nil      -> return acc
     Cons h t -> streamFold fn (fn acc h) t
+    Fork _ Nil -> return acc
+    Fork f (Cons h t) -> do
+      fork f
+      streamFold fn (fn acc h) t
 -- >>
 
 streamFilter :: NFData a => (a -> Bool) -> Stream a -> Par (Stream a)
@@ -94,4 +122,3 @@ streamFilter p instr = do
              loop instr' tail
           | otherwise -> do
              loop instr' outstr
-
