@@ -41,7 +41,7 @@ integer b | Just (i,_) <- B.readInteger b = i
 -- <<pipeline
 pipeline :: Integer -> Integer -> Integer -> ByteString -> ByteString
 pipeline n e d b = runPar $ do
-  s0 <- streamFromList 200 100 (chunk (size n) b)
+  s0 <- streamFromList 200 120 (chunk (size n) b)
   s1 <- encrypt n e s0
   s2 <- decrypt n d s1
   xs <- streamFold (\x y -> (y : x)) [] s2

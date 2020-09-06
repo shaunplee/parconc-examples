@@ -47,7 +47,7 @@ streamFromList chunkSize forkDist xs = do
   loop _ _ [] var = put var Nil         -- <4>
   loop cRem 0 (x:xs) var = do  -- add a Fork
     tail <- new
-    put var (Fork (buildMore (forkDist - 1) xs tail) (Cons x tail))
+    put var (Fork (buildMore (chunkSize - forkDist - 1) xs tail) (Cons x tail))
     loop (cRem - 1) (chunkSize - 1) xs tail
   loop 0 _ _ _ = return () -- quit this loop if chunk is done
   loop cRem fDist (x:xs) var = do       -- <5>
@@ -56,7 +56,7 @@ streamFromList chunkSize forkDist xs = do
     loop (cRem - 1) (fDist - 1) xs tail -- <8>
   buildMore :: (Show a, NFData a) => Int -> [a] -> IVar (IList a) -> Par ()
   buildMore _ [] var = return ()
-  buildMore 0 ys var = loop chunkSize (chunkSize - forkDist) ys var
+  buildMore 0 ys var = loop chunkSize forkDist ys var
   buildMore fdRem (_:ys) restP = do
     next <- get restP
     case next of
