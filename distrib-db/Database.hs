@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 module Database (
        Database,
        Key, Value,
@@ -6,6 +7,7 @@ module Database (
        rcdata,
   ) where
 
+import Control.Concurrent.STM
 import Control.Distributed.Process
 
 import qualified Data.Map as Map
@@ -14,16 +16,24 @@ import Data.Map (Map)
 type Key   = String
 type Value = String
 
-type Database = ProcessId
+data Database = Database { kvStore :: TVar (Map Key Value), spid :: ProcessId }
 
 createDB :: [NodeId] -> Process Database
-createDB nodes = error "not implemented!" -- exercise
+createDB nodes = do
+  pid <- getSelfPid
+  liftIO $ do
+    kvs <- newTVarIO Map.empty
+    return Database { kvStore = kvs, spid = pid}
 
 set :: Database -> Key -> Value -> Process ()
-set db k v = error "not implemented!" -- exercise
+set Database{..} k v = liftIO $ atomically $ do
+  kvs <- readTVar kvStore
+  writeTVar kvStore (Map.insert k v kvs)
 
 get :: Database -> Key -> Process (Maybe Value)
-get db k = error "not implemented!" -- exercise
+get db k = liftIO $ atomically $ do
+  kvs <- readTVar (kvStore db)
+  return $ Map.lookup k kvs
 
 rcdata :: RemoteTable -> RemoteTable
 rcdata = id
